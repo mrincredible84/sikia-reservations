@@ -31,8 +31,8 @@
             <p class="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mt-1">Tue – Thu • 11:00 AM – 12:30 PM</p>
         </header>
 
-        <!-- Toggle Modes -->
-        <div class="flex bg-white/60 p-1 rounded-xl mb-6 text-xs font-bold uppercase tracking-wider shadow-sm border border-white">
+        <!-- Toggle Modes (Hidden by default) -->
+        <div id="toggleBar" class="hidden bg-white/60 p-1 rounded-xl mb-6 text-xs font-bold uppercase tracking-wider shadow-sm border border-white">
             <button id="tabCustomer" onclick="switchView('customer')" class="flex-1 py-2.5 rounded-lg bg-[#A32035] text-white shadow-md transition-all">Book Table</button>
             <button id="tabAdmin" onclick="switchView('admin')" class="flex-1 py-2.5 rounded-lg text-gray-600 hover:text-[#000000] transition-all">Capacity & Admin</button>
         </div>
@@ -44,7 +44,6 @@
 
                 <!-- Formspree Form -->
                 <form id="reservationForm" onsubmit="submitReservation(event)" class="space-y-5">
-                    <!-- Hidden field to capture the selected time for Formspree -->
                     <input type="hidden" id="selectedTimeInput" name="Reservation Time" value="11:00 AM">
 
                     <div>
@@ -154,6 +153,15 @@
         }
 
         window.onload = function() {
+            // Check for the secret admin URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const toggleBar = document.getElementById('toggleBar');
+            
+            if (urlParams.get('admin') === 'true') {
+                toggleBar.classList.remove('hidden');
+                toggleBar.classList.add('flex');
+            }
+
             buildUI();
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('resDate').value = today;
