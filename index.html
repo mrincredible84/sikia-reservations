@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sikia Restaurant Reservations</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sikia">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .card { background: white; border-radius: 1.25rem; box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1); }
+        .input-field { width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 0.75rem; outline: none; font-size: 15px; color: #000000; background-color: #f9fafb; transition: all 0.2s; }
+        .input-field:focus { border-color: #A32035; box-shadow: 0 0 0 2px rgba(163, 32, 53, 0.2); }
+        .slot-btn { border: 2px solid #e5e7eb; background: white; padding: 0.75rem; border-radius: 0.75rem; text-align: left; transition: all 0.2s; }
+        .slot-btn:hover { border-color: #d1d5db; }
+        .slot-btn.selected { border-color: #A32035; background-color: rgba(163, 32, 53, 0.05); }
+    </style>
+</head>
+<body class="bg-[#E3E1DB] text-[#000000] min-h-screen pb-12">
+
+    <div class="max-w-xl mx-auto px-4 pt-8">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-black text-[#A32035] tracking-tight uppercase">Sikia Restaurant</h1>
+            <p class="text-sm font-bold text-[#000000] uppercase tracking-widest mt-2">Lunch Reservations</p>
+            <p class="text-[10px] font-semibold text-gray-600 uppercase tracking-wider mt-1">Tue – Thu • 11:00 AM – 12:30 PM</p>
+        </header>
+
+        <!-- Toggle Modes -->
+        <div class="flex bg-white/60 p-1 rounded-xl mb-6 text-xs font-bold uppercase tracking-wider shadow-sm border border-white">
+            <button id="tabCustomer" onclick="switchView('customer')" class="flex-1 py-2.5 rounded-lg bg-[#A32035] text-white shadow-md transition-all">Book Table</button>
+            <button id="tabAdmin" onclick="switchView('admin')" class="flex-1 py-2.5 rounded-lg text-gray-600 hover:text-[#000000] transition-all">Capacity & Admin</button>
+        </div>
+
+        <!-- Customer Booking View -->
+        <div id="customerView" class="space-y-6">
+            <div class="card p-6 border-t-4 border-[#A32035]">
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Select Details</h2>
+
+                <!-- Formspree Form -->
+                <form id="reservationForm" onsubmit="submitReservation(event)" class="space-y-5">
+                    <!-- Hidden field to capture the selected time for Formspree -->
+                    <input type="hidden" id="selectedTimeInput" name="Reservation Time" value="11:00 AM">
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-[#000000] uppercase mb-1.5">Date (Tue, Wed, Thu only)</label>
+                        <input type="date" id="resDate" name="Reservation Date" class="input-field" onchange="onDateChanged()" required>
+                        <p id="dateError" class="text-xs text-red-600 font-bold mt-1.5 hidden">Please select a Tuesday, Wednesday, or Thursday.</p>
+                    </div>
+
+                    <!-- 15-Minute Seating Slots -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-[#000000] uppercase mb-2">Select Seating</label>
+                        <div class="grid grid-cols-2 gap-3" id="slotContainer">
+                            <!-- Slots generated via JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Party Size -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-[#000000] uppercase mb-1.5">Party Size (Max 5)</label>
+                        <select id="partySize" name="Party Size" class="input-field">
+                            <option value="1">1 Guest</option>
+                            <option value="2">2 Guests</option>
+                            <option value="3">3 Guests</option>
+                            <option value="4">4 Guests</option>
+                            <option value="5">5 Guests</option>
+                        </select>
+                    </div>
+
+                    <!-- Contact Details -->
+                    <div>
+                        <label class="block text-[11px] font-bold text-[#000000] uppercase mb-1.5">Primary Guest Name</label>
+                        <input type="text" id="guestName" name="Guest Name" class="input-field" placeholder="e.g. Warren Edwards" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[11px] font-bold text-[#000000] uppercase mb-1.5">Email Address</label>
+                        <input type="email" id="guestEmail" name="Email Address" class="input-field" placeholder="email@example.com" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-bold text-[#000000] uppercase mb-1.5">Phone Number</label>
+                        <input type="tel" id="guestPhone" name="Phone Number" class="input-field" placeholder="(555) 000-0000" required>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full mt-2 bg-[#A32035] hover:bg-[#85192b] active:scale-[0.99] text-white font-black py-4 rounded-xl shadow-lg text-xs uppercase tracking-widest transition-all">
+                        Confirm Reservation
+                    </button>
+                </form>
+            </div>
+
+            <!-- Confirmation Banner -->
+            <div id="confirmationBox" class="hidden card p-5 border-l-4 border-green-600 bg-green-50">
+                <h3 class="font-black text-green-900 text-sm uppercase tracking-wider">Reservation Confirmed</h3>
+                <p id="confirmationDetails" class="text-xs font-medium text-green-800 mt-1.5 leading-relaxed"></p>
+            </div>
+        </div>
+
+        <!-- Admin / Capacity Management View -->
+        <div id="adminView" class="hidden space-y-6">
+            <div class="card p-6 border-t-4 border-[#000000]">
+                <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">Adjust Default Capacities</h2>
+                <div class="grid grid-cols-2 gap-4" id="adminLimitsContainer">
+                    <!-- Limit inputs generated via JavaScript -->
+                </div>
+                <button onclick="updateCapacities()" class="w-full mt-5 bg-[#000000] text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-widest hover:bg-gray-800 transition-colors">
+                    Save Capacities
+                </button>
+            </div>
+
+            <!-- Active Bookings Log -->
+            <div class="card p-6">
+                <div class="flex items-center justify-between mb-5 border-b border-gray-100 pb-3">
+                    <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Active Bookings</h2>
+                    <button onclick="clearAllBookings()" class="text-[10px] text-[#A32035] font-black uppercase tracking-wider hover:underline">Clear All</button>
+                </div>
+                <div id="bookingsList" class="space-y-3 text-xs">
+                    <p class="text-gray-400 italic font-medium">No reservations booked yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- YOUR FORMSPREE LINK IS ACTIVE HERE ---
+        const formspreeURL = "https://formspree.io/f/mgavwokn";
+        // ------------------------------------------
+
+        const timeslots = ["11:00 AM", "11:15 AM", "11:30 AM", "11:45 AM", "12:00 PM", "12:15 PM"];
+        let selectedTime = "11:00 AM";
+
+        function getDefaultLimits() {
+            let defaults = {};
+            timeslots.forEach(t => defaults[t] = 10);
+            return defaults;
+        }
+
+        function getLimits() {
+            return JSON.parse(localStorage.getItem('sikia_limits_v3')) || getDefaultLimits();
+        }
+
+        function getBookings() {
+            return JSON.parse(localStorage.getItem('sikia_bookings_v3')) || [];
+        }
+
+        function saveBookings(bookings) {
+            localStorage.setItem('sikia_bookings_v3', JSON.stringify(bookings));
+        }
+
+        window.onload = function() {
+            buildUI();
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('resDate').value = today;
+            onDateChanged();
+            renderBookingsList();
+        };
+
+        function buildUI() {
+            const slotContainer = document.getElementById('slotContainer');
+            const adminContainer = document.getElementById('adminLimitsContainer');
+            const limits = getLimits();
+
+            slotContainer.innerHTML = '';
+            adminContainer.innerHTML = '';
+
+            timeslots.forEach((time, index) => {
+                slotContainer.innerHTML += `
+                    <button type="button" id="btnSlot_${index}" onclick="selectSlot('${time}', ${index})" class="slot-btn">
+                        <span class="block font-black text-sm text-[#000000]">${time}</span>
+                        <span id="spotsSlot_${index}" class="text-[11px] font-medium text-gray-500">Loading...</span>
+                    </button>
+                `;
+                adminContainer.innerHTML += `
+                    <div>
+                        <label class="block text-[10px] font-bold text-[#000000] uppercase mb-1.5">${time} Limit</label>
+                        <input type="number" id="limit_${index}" min="0" class="input-field" value="${limits[time]}">
+                    </div>
+                `;
+            });
+            selectSlot("11:00 AM", 0);
+        }
+
+        function switchView(view) {
+            const custView = document.getElementById('customerView');
+            const admView = document.getElementById('adminView');
+            const tabCust = document.getElementById('tabCustomer');
+            const tabAdm = document.getElementById('tabAdmin');
+
+            if (view === 'customer') {
+                custView.classList.remove('hidden');
+                admView.classList.add('hidden');
+                tabCust.className = "flex-1 py-2.5 rounded-lg bg-[#A32035] text-white shadow-md transition-all";
+                tabAdm.className = "flex-1 py-2.5 rounded-lg text-gray-600 hover:text-[#000000] transition-all";
+                onDateChanged();
+            } else {
+                custView.classList.add('hidden');
+                admView.classList.remove('hidden');
+                tabAdm.className = "flex-1 py-2.5 rounded-lg bg-[#000000] text-white shadow-md transition-all";
+                tabCust.className = "flex-1 py-2.5 rounded-lg text-gray-600 hover:text-[#000000] transition-all";
+                renderBookingsList();
+            }
+        }
+
+        function onDateChanged() {
+            const dateInput = document.getElementById('resDate').value;
+            const dateErr = document.getElementById('dateError');
+            if (!dateInput) return;
+
+            const [year, month, day] = dateInput.split('-').map(Number);
+            const chosenDate = new Date(year, month - 1, day);
+            const dayOfWeek = chosenDate.getDay(); 
+
+            if (dayOfWeek < 2 || dayOfWeek > 4) {
+                dateErr.classList.remove('hidden');
+                disableBookingControls(true);
+            } else {
+                dateErr.classList.add('hidden');
+                disableBookingControls(false);
+                refreshAvailability(dateInput);
+            }
+        }
+
+        function disableBookingControls(disable) {
+            timeslots.forEach((time, index) => {
+                const btn = document.getElementById(`btnSlot_${index}`);
+                if (btn) {
+                    btn.disabled = disable;
+                    if(disable) btn.classList.add('opacity-50');
+                    else btn.classList.remove('opacity-50');
+                }
+            });
+            document.getElementById('submitBtn').disabled = disable;
+        }
+
+        function selectSlot(time, selectedIndex) {
+            selectedTime = time;
+            document.getElementById('selectedTimeInput').value = time; // Updates hidden input for Formspree
+            
+            timeslots.forEach((t, index) => {
+                const btn = document.getElementById(`btnSlot_${index}`);
+                if (btn) {
+                    if (index === selectedIndex) {
+                        btn.classList.add('selected');
+                    } else {
+                        btn.classList.remove('selected');
+                    }
+                }
+            });
+        }
+
+        function refreshAvailability(date) {
+            const limits = getLimits();
+            const bookings = getBookings().filter(b => b.date === date);
+
+            timeslots.forEach((time, index) => {
+                const count = bookings.filter(b => b.time === time).length;
+                const left = Math.max(0, limits[time] - count);
+                const spotText = document.getElementById(`spotsSlot_${index}`);
+                if(spotText) {
+                    spotText.innerText = `${left} of ${limits[time]} spots open`;
+                }
+            });
+        }
+
+        async function submitReservation(event) {
+            event.preventDefault(); // Prevents page reload
+            
+            if (formspreeURL === "YOUR_FORMSPREE_LINK_HERE") {
+                alert("Please add your Formspree Endpoint URL to the code to enable submissions.");
+                return;
+            }
+
+            const form = event.target;
+            const btn = document.getElementById('submitBtn');
+            const date = document.getElementById('resDate').value;
+            const name = document.getElementById('guestName').value.trim();
+            const email = document.getElementById('guestEmail').value.trim();
+            const phone = document.getElementById('guestPhone').value.trim();
+            const party = parseInt(document.getElementById('partySize').value);
+
+            // Check Capacity Locally
+            const limits = getLimits();
+            const bookings = getBookings();
+            const slotBookings = bookings.filter(b => b.date === date && b.time === selectedTime);
+
+            if (slotBookings.length >= limits[selectedTime]) {
+                alert(`Sorry, the ${selectedTime} slot on this date is fully booked.`);
+                return;
+            }
+
+            btn.innerText = "Processing...";
+            btn.disabled = true;
+
+            // Send to Formspree
+            const formData = new FormData(form);
+            try {
+                const response = await fetch(formspreeURL, {
+                    method: 'POST',
+                    body: formData,
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (response.ok) {
+                    // Save locally for admin view
+                    bookings.push({ id: Date.now(), date: date, time: selectedTime, party: party, name: name, email: email, phone: phone });
+                    saveBookings(bookings);
+
+                    // Show Confirmation
+                    const confirmBox = document.getElementById('confirmationBox');
+                    const confirmText = document.getElementById('confirmationDetails');
+                    confirmText.innerText = `${name} (Party of ${party}) reserved for ${date} at ${selectedTime}. A confirmation will be sent to ${email}.`;
+                    confirmBox.classList.remove('hidden');
+
+                    form.reset();
+                    selectSlot("11:00 AM", 0);
+                    refreshAvailability(date);
+                } else {
+                    alert("Oops! There was a problem submitting your reservation.");
+                }
+            } catch (error) {
+                alert("Network error. Please try again.");
+            } finally {
+                btn.innerText = "Confirm Reservation";
+                btn.disabled = false;
+            }
+        }
+
+        function updateCapacities() {
+            let newLimits = {};
+            timeslots.forEach((time, index) => {
+                const val = parseInt(document.getElementById(`limit_${index}`).value) || 0;
+                newLimits[time] = val;
+            });
+            localStorage.setItem('sikia_limits_v3', JSON.stringify(newLimits));
+            alert("Capacities updated successfully!");
+            onDateChanged();
+        }
+
+        function renderBookingsList() {
+            const listContainer = document.getElementById('bookingsList');
+            const bookings = getBookings();
+
+            if (bookings.length === 0) {
+                listContainer.innerHTML = '<p class="text-gray-400 italic font-medium">No reservations booked yet.</p>';
+                return;
+            }
+
+            bookings.sort((a, b) => new Date(a.date) - new Date(b.date) || a.time.localeCompare(b.time));
+
+            listContainer.innerHTML = bookings.map(b => `
+                <div class="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-lg shadow-sm">
+                    <div>
+                        <span class="font-black text-[#000000]">${b.name}</span> <span class="text-gray-500 font-medium">(${b.party} guests)</span><br>
+                        <span class="text-[11px] font-bold text-[#A32035] uppercase tracking-wider">${b.date} • ${b.time}</span> <span class="text-gray-400">| ${b.phone}</span><br>
+                        <span class="text-[10px] text-gray-500">${b.email}</span>
+                    </div>
+                    <button onclick="cancelBooking(${b.id})" class="text-[#A32035] text-[11px] font-black uppercase hover:underline px-2 py-1">Cancel</button>
+                </div>
+            `).join('');
+        }
+
+        function cancelBooking(id) {
+            let bookings = getBookings().filter(b => b.id !== id);
+            saveBookings(bookings);
+            renderBookingsList();
+            onDateChanged();
+        }
+
+        function clearAllBookings() {
+            if (confirm("Are you sure you want to delete all bookings? This cannot be undone.")) {
+                localStorage.removeItem('sikia_bookings_v3');
+                renderBookingsList();
+                onDateChanged();
+            }
+        }
+    </script>
+</body>
+</html>
